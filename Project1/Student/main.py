@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "fastapi[standard]",
-#   "unicorn",
+#   "uvicorn",
 # ]
 # ///
 
@@ -16,5 +16,7 @@ async def handle_task(data:dict):
   print(data)
   return {"message":"Task received","data":data}
 
-
+if __name__ == "__main__":
+  import uvicorn
+  uvicorn.run(app,host-"0.0.0.0",port=8080)
 
