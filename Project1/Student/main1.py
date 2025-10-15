@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
 
 def write_code_using_llm():
-    # make it auto mationatically generate the code files
+    # make it auto automatically generate the code files
     return [
         {
             "name": "index.html",
@@ -303,5 +303,15 @@ def write_code_using_llm():
 </body>
 </html>
 """
+        }
+    ]
+
+
+
+# write a false code
+def new():
+    return [
+        {
+            "irfan Ansari"
         }
     ]
