@@ -10,6 +10,7 @@
 import requests
 import os
 
+
 # Use this proxy https://aipipe.org/openai/v1 with the correct endpoint
 api_base_url = os.getenv("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
 api_key = os.getenv("OPENAI_API_KEY")  # Make sure to set your OpenAI API key in the environment variable

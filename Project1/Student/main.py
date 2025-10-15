@@ -11,6 +11,12 @@ import requests
 import os
 import base64
 from fastapi import FastAPI
+
+
+# Use this proxy https://aipipe.org/openai/v1 with the correct endpoint
+api_base_url = os.getenv("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
+api_key = os.getenv("OPENAI_API_KEY")  # Make sure to set your OpenAI API key in the environment variable
+
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  
 # NOTE: Replace 'YOUR_GITHUB_USERNAME' with the actual username associated with GITHUB_TOKEN
 GITHUB_USERNAME = os.getenv("GITHUB_USERNAME") 
@@ -226,8 +232,36 @@ def round1(data):
     print(f"Error during round1 processing: {e}") 
     return {"error": str(e)}
 
-def round2():
-  pass
+def round2(data: dict):
+  try:
+    # 1. Get the repo name from the previous round (assuming task/nonce remain same)
+    repo_name = f"{data['task']}_{data['nonce']}"
+    
+    # 2. CRITICAL: The task server should send 'feedback' or 'evaluation_results' in the Round 2 JSON Request.
+    # This information is VITAL for the LLM to know what to fix.
+    feedback = data.get("evaluation_feedback", "Fix known issues and ensure all checks are passed.")
+
+    # 3. Call the LLM to generate modified code
+    # NOTE: You'd call a similar LLM function, but with a different prompt:
+    # "The existing code is in {repo_name}. The feedback is: {feedback}. Provide the modified files only."
+    
+    # Placeholder for modified files (LLM should generate the fixes)
+    files_to_modify = [
+      {
+        "name": "index.html",
+        "content": "<h1>Fixed Hello World!</h1>\n<p>This is the Round 2 modified code.</p>" # LLM generated FIX
+      },
+    ]
+
+    # 4. Push/Update files to the existing repo (push_files_to_repo handles the update by using the SHA)
+    push_files_to_repo(repo_name, files_to_modify, round_num=2)
+    
+    return {"message": "Round 2 code modification complete", "repo_name": repo_name}
+
+  except Exception as e:
+    print(f"Error during round2 processing: {e}") 
+    return {"error": str(e)}
+
 
 app = FastAPI()
 
@@ -241,8 +275,8 @@ async def handle_task(data:dict):
           result = round1(data)
           return result
       elif data.get("round") == 2:
-          round2()
-          return {"message": "Round 2 processing started"}
+          result = round2(data)
+          return result
       else:
           return {"error": "Invalid round"}
 
