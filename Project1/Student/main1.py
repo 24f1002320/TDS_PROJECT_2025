@@ -182,6 +182,7 @@ def write_code_using_llm():
     Simulates the LLM generating the initial code files.
     Returns a list of file dictionaries for push_files_to_repo.
     """
+
     return [
         {
             "name": "index.html",
@@ -281,3 +282,26 @@ if __name__ == "__main__":
   # NOTE: You must run the server with the GITHUB_USERNAME env var set:
   # e.g., GITHUB_TOKEN=... GITHUB_USERNAME=... uv run main.py
   uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+def write_code_using_llm():
+    # make it auto mationatically generate the code files
+    return [
+        {
+            "name": "index.html",
+            "content": """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+</head>         
+<body>
+    <h1>Hello, World!</h1>
+    <p>This is a test page pushed by LLM for round 1 for GitHub Pages deployment.</p>
+</body>
+</html>
+"""
+        }
+    ]
