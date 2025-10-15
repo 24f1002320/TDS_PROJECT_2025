@@ -66,7 +66,7 @@ def enable_github_pages(repo_name: str):
     
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}", 
-        "Accept": "application/vnd.github+json"
+        "Accept": "application/vnd.github.json"
     }
 
     response = requests.post(
@@ -117,7 +117,8 @@ def get_sha_of_latest_commit(repo_name: str, file_path: str): # file_path argume
 def push_files_to_repo(repo_name: str, files: list[dict], round_num: int):
     """
     Pushes multiple files (or updates them) to the repository using the GitHub API.
-    Files must be a list of dicts: [{'name': 'file.txt', 'content': 'file content'}]
+    It now ALWAYS checks for file existence and fetches the SHA for updates, 
+    making it robust for repeated runs on the same repository (fixing the 422 error).
     """
     
     if not GITHUB_USERNAME:
@@ -144,26 +145,22 @@ def push_files_to_repo(repo_name: str, files: list[dict], round_num: int):
             encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
         else:
             raise TypeError(f"File content for '{file_name}' must be bytes or string, got {type(file_content)}")
-        
+
         # 2. CRITICAL FIX: ALWAYS get SHA for the specific file
         current_sha = get_sha_of_latest_commit(repo_name, file_path=file_name)
-
-        # 2. Prepare payload
+        
+        # 3. Prepare payload
         payload = {
             "message": f"Add/Update {file_name} for Round {round_num}",
             "content": encoded_content,
             "branch": "main" 
         }
 
-        # 3. CRITICAL FIX: Get SHA for the specific file if updating in round 2
-        current_sha = None
-        if round_num == 2:
-            current_sha = get_sha_of_latest_commit(repo_name, file_path=file_name)
-        
+        # 4. Include SHA if the file already exists (for update/overwrite)
         if current_sha:
-            payload["sha"] = current_sha # Include file's SHA for updating
+            payload["sha"] = current_sha 
 
-        # 4. Perform the API call
+        # 5. Perform the API call
         url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{repo_name}/contents/{file_name}"
 
         response = requests.put(
@@ -173,7 +170,6 @@ def push_files_to_repo(repo_name: str, files: list[dict], round_num: int):
         )
 
         if response.status_code not in [200, 201]:
-             # Provide more context if the SHA was missing/wrong
              sha_info = f" with SHA: {current_sha}" if current_sha else ""
              raise Exception(f"Failed to push file '{file_name}'{sha_info}. Status code: {response.status_code}, Response: {response.text}")
         else:
@@ -206,28 +202,61 @@ def write_code_using_llm():
         }
     ]
 
+def write_code_using_llm_round2():
+    """Simulates LLM generating an updated file for Round 2."""
+    return [
+        {
+            "name": "index.html",
+            "content": """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World - Round 2</title>
+</head>
+<body>
+    <h1>Hello, World! (Updated in Round 2)</h1>
+    <p>This confirms the file update was successful.</p>
+</body>
+</html>
+"""
+        }
+    ]
+
 
 def round1(data):
   try:
     files_to_push = write_code_using_llm()
     
     repo_name = f"{data['task']}_{data['nonce']}"
-
-    # CRITICAL: Uncomment these lines to create the repo and enable pages
-    create_github_repo(repo_name) 
-    enable_github_pages(repo_name) 
-
-    # Push files to the newly created repo
+    
+    # Push files. Since repo creation is skipped, this handles the file creation/update now.
     push_files_to_repo(repo_name, files_to_push, round_num=1)
     
-    return {"message": "Round 1 processing complete", "repo_name": repo_name} 
+    return {"message": "Round 1 processing complete (Files pushed/updated)", "repo_name": repo_name} 
   
   except Exception as e:
     print(f"Error during round1 processing: {e}") 
     return {"error": str(e)}
 
-def round2():
-  pass
+def round2(data):
+  try:
+    files_to_push = write_code_using_llm_round2()
+    
+    repo_name = f"{data['task']}_{data['nonce']}"
+    
+    # Push the updated files with round_num=2
+    push_files_to_repo(repo_name, files_to_push, round_num=2)
+    
+    return {"message": "Round 2 processing complete (Files updated)", "repo_name": repo_name} 
+  
+  except Exception as e:
+    print(f"Error during round2 processing: {e}") 
+    return {"error": str(e)}
+
+
+# The deploy_github_pages is a placeholder and has been removed from the final structure for clarity.
 
 app = FastAPI()
 
@@ -241,8 +270,9 @@ async def handle_task(data:dict):
           result = round1(data)
           return result
       elif data.get("round") == 2:
-          round2()
-          return {"message": "Round 2 processing started"}
+          # Pass data to round2
+          result = round2(data)
+          return result
       else:
           return {"error": "Invalid round"}
 
