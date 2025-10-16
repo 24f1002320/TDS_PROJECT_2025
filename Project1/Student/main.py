@@ -187,31 +187,50 @@ def push_files_to_repo(repo_name: str, files: list[dict], round_num: int):
              print(f"File '{file_name}' {action} successfully (Status {response.status_code}).")
 
 
-def write_code_using_llm():
-    """
-    Simulates the LLM generating the initial code files.
-    Returns a list of file dictionaries for push_files_to_repo.
-    """
-    return [
-        {
-            "name": "index.html",
-            "content": """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
-</head>
-<body>
-    <h1>Hello, World!</h1>
-    <p>This is a test page pushed by LLM for round 1 for GitHub Pages deployment.</p>
-</body>
-</html>
-"""
-        }
-    ]
+def generate_code(prompt: str) -> str:
+    api_base_url = os.getenv("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
+    api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not api_key:
+        raise Exception("OPENAI_API_KEY environment variable is not set")
+    
+    if not api_base_url.endswith("/chat/completions"):
+        api_url = f"{api_base_url}/chat/completions"
+    else:
+        api_url = api_base_url
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    data = {
+        "model": "gpt-4o",
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    
+    response = requests.post(api_url, headers=headers, json=data)    
+    if response.status_code == 200:
+        result = response.json()
+        return result['choices'][0]['message']['content']
+    else:
+        raise Exception(f"Request failed with status code {response.status_code}: {response.text}")
 
+def write_code_using_llm():
+    prompt = "give me five city name of India?"
+    return generate_code(prompt)
+
+if __name__ == "__main__":
+    try:
+        code = write_code_using_llm()
+        print("Generated code:")
+        print(code)
+        
+        with open("fibonacci_code.py", "w") as f:
+            f.write(code)
+        print("Code saved to fibonacci_code.py")
+        
+    except Exception as e:
+        print(f"Error: {e}")
 
 def round1(data):
   try:
