@@ -344,16 +344,16 @@
                     // Success
                     let successHTML = `<p><strong>Message:</strong> ${result.message}</p>`;
                     if (result.repo_url) {
-                        successHTML += `<div class="url-link"><strong>Repository:</strong> <a href="${result.repo_url}" target="_blank">${result.repo_url}</a></div>`;
+                    successHTML += `<div class="url-link"><strong>📁 GitHub Repository:</strong> <a href="${result.repo_url}" target="_blank">${result.repo_url}</a></div>`;
                     }
                     if (result.pages_url) {
-                        successHTML += `<div class="url-link"><strong>Live Website:</strong> <a href="${result.pages_url}" target="_blank">${result.pages_url}</a></div>`;
+                    successHTML += `<div class="url-link"><strong>🌐 GitHub Pages:</strong> <a href="${result.pages_url}" target="_blank">${result.pages_url}</a></div>`;
                     }
+                    // if (result.huggingface_url) {
+                    // successHTML += `<div class="url-link"><strong>🤗 Hugging Face Space:</strong> <a href="${result.huggingface_url}" target="_blank">${result.huggingface_url}</a></div>`;
+                    // }
                     if (result.files_created) {
-                        successHTML += `<p><strong>Files Created:</strong> ${result.files_created}</p>`;
-                    }
-                    if (result.files_updated) {
-                        successHTML += `<p><strong>Files Updated:</strong> ${result.files_updated}</p>`;
+                    successHTML += `<p><strong>📄 Files Created:</strong> ${result.files_created}</p>`;
                     }
 
                     document.getElementById('successContent').innerHTML = successHTML;

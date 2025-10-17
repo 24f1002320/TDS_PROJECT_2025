@@ -10,6 +10,7 @@
 import os
 import requests
 import base64
+import time
 import json
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -441,6 +442,89 @@ button:hover {
 }"""
         }
     ]
+    
+
+# def create_huggingface_space(repo_name: str, files: list[dict]):
+#     HF_TOKEN = os.getenv("HF_TOKEN")
+#     HF_USERNAME = "irfanhugginh"
+    
+#     if not HF_TOKEN:
+#         raise Exception("HF_TOKEN environment variable not set")
+    
+#     # Create space
+#     create_url = "https://huggingface.co/api/repos/create"
+#     create_payload = {
+#         "name": repo_name,
+#         "type": "space",
+#         "sdk": "static",
+#         "private": False
+#     }
+    
+#     headers = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
+    
+#     response = requests.post(create_url, headers=headers, json=create_payload)
+    
+#     if response.status_code == 409:
+#         print(f"Space {repo_name} already exists")
+#     elif response.status_code not in [200, 201]:
+#         raise Exception(f"Failed to create space: {response.status_code}")
+    
+    # Wait longer for Space initialization
+    # print("Waiting for Space to initialize...")
+    # time.sleep(20)  # Hugging Face needs more time
+    
+    # # DELETE existing files first (important!)
+    # try:
+    #     # Get existing files and delete them
+    #     list_url = f"https://huggingface.co/api/spaces/{HF_USERNAME}/{repo_name}/tree/main"
+    #     list_response = requests.get(list_url, headers=headers)
+        
+    #     if list_response.status_code == 200:
+    #         existing_files = list_response.json()
+    #         for file_info in existing_files:
+    #             if file_info['type'] == 'file':
+    #                 delete_url = f"https://huggingface.co/api/spaces/{HF_USERNAME}/{repo_name}/content/main/{file_info['path']}"
+    #                 delete_response = requests.delete(delete_url, headers=headers)
+    #                 if delete_response.status_code in [200, 201]:
+    #                     print(f"Deleted existing file: {file_info['path']}")
+    # except Exception as e:
+    #     print(f"Note: Could not clear existing files: {e}")
+    
+    # # Upload NEW files with proper error handling
+    # uploaded_count = 0
+    # for file in files:
+    #     file_name = file.get("name")
+    #     file_content = file.get("content")
+        
+    #     if not file_name or file_content is None:
+    #         continue
+            
+    #     upload_url = f"https://huggingface.co/api/spaces/{HF_USERNAME}/{repo_name}/content/main/{file_name}"
+        
+    #     headers_upload = {
+    #         "Authorization": f"Bearer {HF_TOKEN}",
+    #         "Content-Type": "text/plain"
+    #     }
+        
+    #     try:
+    #         upload_response = requests.put(upload_url, headers=headers_upload, data=file_content)
+            
+    #         if upload_response.status_code not in [200, 201]:
+    #             print(f"❌ FAILED to upload {file_name}: {upload_response.status_code} - {upload_response.text}")
+    #             # Don't continue - this is critical
+    #             raise Exception(f"Failed to upload {file_name} to Hugging Face")
+    #         else:
+    #             print(f"✅ Uploaded {file_name} to Hugging Face Space")
+    #             uploaded_count += 1
+                
+    #     except Exception as e:
+    #         print(f"❌ Error uploading {file_name}: {e}")
+    #         raise Exception(f"Hugging Face file upload failed: {e}")
+    
+    # print(f"✅ Successfully uploaded {uploaded_count}/{len(files)} files to Hugging Face")
+    
+    # return f"https://huggingface.co/spaces/{HF_USERNAME}/{repo_name}"
+  
 
 def round1(data):
     try:
@@ -450,7 +534,7 @@ def round1(data):
         task_brief = data.get('brief', 'Create a captcha solver web application')
         files_to_push = write_code_using_llm(task_brief, round_num=1)
         
-        repo_name = f"{data['task']}_{data['nonce']}"
+        repo_name = f"{data['task']}-{data['nonce']}"
         print(f"Repository name: {repo_name}")
 
         # Create repo and enable pages
@@ -460,17 +544,25 @@ def round1(data):
         pages_info = enable_github_pages(repo_name)
         print("GitHub Pages configured")
 
-        # Push files
+        # Push files to GitHub
         push_files_to_repo(repo_name, files_to_push, round_num=1)
-        print("All files pushed successfully")
+        print("All files pushed to GitHub successfully")
+        
+        # Create Hugging Face Space
+        # huggingface_url = create_huggingface_space(repo_name,files_to_push)
         
         return {
             "message": "Round 1 processing complete", 
             "repo_name": repo_name,
             "repo_url": repo_info.get('html_url', ''),
             "pages_url": f"https://{GITHUB_USERNAME}.github.io/{repo_name}/",
+            # "huggingface_url": huggingface_url,
             "files_created": len(files_to_push)
         } 
+    
+    except Exception as e:
+        print(f"Error during round1 processing: {e}")
+        return {"error": str(e)}
     
     except Exception as e:
         print(f"Error during round1 processing: {e}")
