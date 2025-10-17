@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captcha Solver Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input {
+            width: auto;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .url-link {
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .url-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .url-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Captcha Solver Agent</h1>
+        
+        <form id="taskForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="student@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="secret">Secret Key:</label>
+                <input type="text" id="secret" value="irfankhan" required>
+            </div>
+
+            <div class="form-group">
+                <label for="task">Task Name:</label>
+                <input type="text" id="task" value="captcha-solver" required>
+            </div>
+
+            <div class="form-group">
+                <label for="round">Round:</label>
+                <select id="round" required>
+                    <option value="1">Round 1 - Initial Creation</option>
+                    <option value="2">Round 2 - Improvements</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="nonce">Unique ID (Nonce):</label>
+                <input type="text" id="nonce" value="" placeholder="Enter unique identifier" required>
+                <small>This will be auto-generated if left empty</small>
+            </div>
+
+            <div class="form-group">
+                <label for="brief">Task Brief:</label>
+                <textarea id="brief" required>Create a captcha solver that handles ?url=https://.../image.png. Default to attached sample.</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Checks (Requirements):</label>
+                <div class="checkbox-group" id="checksContainer">
+                    <!-- Checkboxes will be added dynamically -->
+                </div>
+                <input type="text" id="newCheck" placeholder="Add new check requirement">
+                <button type="button" onclick="addCheck()">Add Check</button>
+            </div>
+
+            <div class="form-group" id="feedbackGroup" style="display: none;">
+                <label for="evaluation_feedback">Evaluation Feedback (Round 2):</label>
+                <textarea id="evaluation_feedback" placeholder="Enter feedback from Round 1 evaluation..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn">🚀 Process Task</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your task... This may take a few minutes.</p>
+        </div>
+
+        <div class="result success" id="successResult">
+            <h3>✅ Success!</h3>
+            <div id="successContent"></div>
+        </div>
+
+        <div class="result error" id="errorResult">
+            <h3>❌ Error</h3>
+            <div id="errorContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize default checks
+        const defaultChecks = [
+            "Repo has MIT license",
+            "README.md is professional",
+            "Page displays captcha URL passed at ?url=...",
+            "Page displays solved captcha text within 15 seconds"
+        ];
+
+        // Initialize checkboxes
+        function initializeChecks() {
+            const container = document.getElementById('checksContainer');
+            defaultChecks.forEach(check => {
+                addCheckToContainer(check);
+            });
+        }
+
+        function addCheckToContainer(checkText) {
+            const container = document.getElementById('checksContainer');
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            div.innerHTML = `
+                <input type="checkbox" checked value="${checkText}">
+                <label>${checkText}</label>
+                <button type="button" onclick="removeCheck(this)" style="margin-left: 10px; padding: 2px 8px; background: #e74c3c;">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addCheck() {
+            const newCheckInput = document.getElementById('newCheck');
+            const checkText = newCheckInput.value.trim();
+            if (checkText) {
+                addCheckToContainer(checkText);
+                newCheckInput.value = '';
+            }
+        }
+
+        function removeCheck(button) {
+            button.parentElement.remove();
+        }
+
+        // Generate unique nonce if empty
+        function generateNonce() {
+            return 'task-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Show/hide feedback field based on round
+        function toggleFeedbackField() {
+            const round = document.getElementById('round').value;
+            const feedbackGroup = document.getElementById('feedbackGroup');
+            if (round === '2') {
+                feedbackGroup.style.display = 'block';
+            } else {
+                feedbackGroup.style.display = 'none';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('taskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Generate nonce if empty
+            let nonce = document.getElementById('nonce').value;
+            if (!nonce) {
+                nonce = generateNonce();
+                document.getElementById('nonce').value = nonce;
+            }
+
+            // Get selected checks
+            const checks = Array.from(document.querySelectorAll('#checksContainer input[type="checkbox"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            // Prepare payload
+            const payload = {
+                email: document.getElementById('email').value,
+                secret: document.getElementById('secret').value,
+                task: document.getElementById('task').value,
+                round: parseInt(document.getElementById('round').value),
+                nonce: nonce,
+                brief: document.getElementById('brief').value,
+                checks: checks,
+                evaluation_url: "https://example.com/notify"
+            };
+
+            // Add feedback for round 2
+            if (payload.round === 2) {
+                payload.evaluation_feedback = document.getElementById('evaluation_feedback').value;
+            }
+
+            // Show loading, hide results
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('successResult').style.display = 'none';
+            document.getElementById('errorResult').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                // Determine the backend URL (local for development, Hugging Face for production)
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const baseUrl = isLocal ? 'http://localhost:8000' : window.location.origin;
+                
+                const response = await fetch(`${baseUrl}/handle_task`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && !result.error) {
+                    // Success
+                    let successHTML = `<p><strong>Message:</strong> ${result.message}</p>`;
+                    if (result.repo_url) {
+                        successHTML += `<div class="url-link"><strong>Repository:</strong> <a href="${result.repo_url}" target="_blank">${result.repo_url}</a></div>`;
+                    }
+                    if (result.pages_url) {
+                        successHTML += `<div class="url-link"><strong>Live Website:</strong> <a href="${result.pages_url}" target="_blank">${result.pages_url}</a></div>`;
+                    }
+                    if (result.files_created) {
+                        successHTML += `<p><strong>Files Created:</strong> ${result.files_created}</p>`;
+                    }
+                    if (result.files_updated) {
+                        successHTML += `<p><strong>Files Updated:</strong> ${result.files_updated}</p>`;
+                    }
+
+                    document.getElementById('successContent').innerHTML = successHTML;
+                    document.getElementById('successResult').style.display = 'block';
+                } else {
+                    // Error
+                    document.getElementById('errorContent').textContent = result.error || 'Unknown error occurred';
+                    document.getElementById('errorResult').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('errorContent').textContent = `Network error: ${error.message}`;
+                document.getElementById('errorResult').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+        // Initialize the form
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChecks();
+            toggleFeedbackField();
+            document.getElementById('nonce').value = generateNonce();
+            
+            // Update feedback field when round changes
+            document.getElementById('round').addEventListener('change', toggleFeedbackField);
+        });
+    </script>
+</body>
+</html>
